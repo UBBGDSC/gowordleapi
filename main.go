@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -16,7 +17,7 @@ func main() {
 
 	// Set up HTTP server
 	server := &http.Server{
-		Addr:    ":8080", // Change the port as needed
+		Addr:    "127.0.0.1:8080", // Change the port as needed
 		Handler: http.DefaultServeMux,
 	}
 
@@ -32,6 +33,7 @@ func main() {
 		for easyWordUrl := range wordleInstance.EasyWordChannel {
 			go easyWordRoutine(easyWordUrl)
 		}
+		fmt.Println("Easy word channel closed")
 	}()
 	//go func() {
 	// 	for hardWordUrl := range wordleInstance.HardWordChannel {

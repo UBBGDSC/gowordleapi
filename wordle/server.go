@@ -8,7 +8,8 @@ import (
 	"strings"
 )
 
-const numWords = 2 // Number of unique words
+const numWords = 100
+
 var EasyWordlePreferences = WordlePreferences{
 	Length:                 20,
 	ContainsCapitalLetters: false,
@@ -46,15 +47,6 @@ func SetupServer(server *http.Server, wordle *Wordle) {
 			return
 		}
 
-		// if err := validateGuess(wordle.word, guessReq.Guess, wordle.WordlePreferences); err != nil {
-		// 	http.Error(w, err.Error(), http.StatusBadRequest)
-		// 	return
-		// }
-
-		// correctPositionCount, partialMatchCount, feedback := calculateFeedback(wordle.word, guessReq.Guess)
-		// if correctPositionCount == len(wordle.word) {
-		// 	wordle.Generate(wordle.WordlePreferences)
-		// }
 		response, err := handleGuess(guessReq, wordle.word, wordle.WordlePreferences)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -101,6 +93,7 @@ func SetupServer(server *http.Server, wordle *Wordle) {
 		for _, wordURL := range wordURLs {
 			wordle.EasyWordChannel <- wordURL
 		}
+		close(wordle.EasyWordChannel)
 	}()
 
 	server.Handler = http.DefaultServeMux
