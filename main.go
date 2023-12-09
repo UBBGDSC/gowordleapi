@@ -94,7 +94,7 @@ func easyWordRoutine(wordUrl string) {
 
 		// Check if the guess was successful
 		if guessResponse.CorrectPositionCount == easyWordLength {
-			log.Println("Successful guess at", wordUrl)
+			log.Println("Successful guess with word", guessRequestBody.Guess, "at", wordUrl)
 			break // Exit the loop if successful
 		}
 

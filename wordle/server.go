@@ -11,7 +11,7 @@ import (
 const numWords = 100
 
 var EasyWordlePreferences = WordlePreferences{
-	Length:                 20,
+	Length:                 15,
 	ContainsCapitalLetters: false,
 	ContainsSpecialChars:   false,
 	ContainsNumbers:        false,

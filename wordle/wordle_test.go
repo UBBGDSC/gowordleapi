@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestGenerate(t *testing.T) {
+func TestGenerateWithNoSpecialNoNumbers(t *testing.T) {
 	pref := WordlePreferences{
 		Length:                 5,
 		ContainsCapitalLetters: true,
@@ -20,13 +20,13 @@ func TestGenerate(t *testing.T) {
 	}
 
 	for _, char := range word {
-		if !isCapitalLetter(char) {
-			t.Errorf("Expected capital letter, but got %c", char)
+		if isNumber(char) || isSpecialChar(char) {
+			t.Errorf("Did not expect number or special character, but got %c", char)
 		}
 	}
 }
 
-func TestGenerateWithSpecialChars(t *testing.T) {
+func TestGenerateWithNoNumbers(t *testing.T) {
 	pref := WordlePreferences{
 		Length:                 5,
 		ContainsCapitalLetters: true,
@@ -42,13 +42,13 @@ func TestGenerateWithSpecialChars(t *testing.T) {
 	}
 
 	for _, char := range word {
-		if !isCapitalLetter(char) && !isSpecialChar(char) {
-			t.Errorf("Expected capital letter, but got %c", char)
+		if isNumber(char) {
+			t.Errorf("Did not expect numbers in word, but got %c", char)
 		}
 	}
 }
 
-func TestGenerateWithNumbers(t *testing.T) {
+func TestGenerateWithNoSpecials(t *testing.T) {
 	pref := WordlePreferences{
 		Length:                 5,
 		ContainsCapitalLetters: true,
@@ -64,8 +64,32 @@ func TestGenerateWithNumbers(t *testing.T) {
 	}
 
 	for _, char := range word {
-		if !isCapitalLetter(char) && !isNumber(char) {
-			t.Errorf("Expected capital letter, but got %c", char)
+		if isSpecialChar(char) {
+			t.Errorf("Did not expect special characters in word, but got %c", char)
+		}
+	}
+}
+func TestGenerateMultipleRandomWords(t *testing.T) {
+	pref := WordlePreferences{
+		Length:                 5,
+		ContainsCapitalLetters: true,
+		ContainsSpecialChars:   false,
+		ContainsNumbers:        false,
+	}
+
+	w := NewWordle()
+
+	for i := 0; i < 100; i++ {
+		word := w.Generate(pref)
+
+		if len(word) != pref.Length {
+			t.Errorf("Expected word length %d, but got %d", pref.Length, len(word))
+		}
+
+		for _, char := range word {
+			if isNumber(char) || isSpecialChar(char) {
+				t.Errorf("Expected only capital and lowercase letters, but got %c", char)
+			}
 		}
 	}
 }
