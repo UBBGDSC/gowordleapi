@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-const numWords = 100
+const numWords = 50
 
 type GuessRequest struct {
 	Guess string `json:"guess"`
