@@ -10,13 +10,6 @@ import (
 
 const numWords = 100
 
-var EasyWordlePreferences = WordlePreferences{
-	Length:                 15,
-	ContainsCapitalLetters: false,
-	ContainsSpecialChars:   false,
-	ContainsNumbers:        false,
-}
-
 type GuessRequest struct {
 	Guess string `json:"guess"`
 }
@@ -28,33 +21,15 @@ type GuessResponse struct {
 }
 
 func SetupServer(server *http.Server, wordle *Wordle) {
-	// setup channels
-	http.HandleFunc("/wordle/info", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(wordle.WordlePreferences)
-	})
-
 	http.HandleFunc("/wordle/guess", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
+		if r.Method == http.MethodPost {
+			handlePostGuess(w, r, wordle.word, wordle.WordlePreferences)
+		} else if r.Method == http.MethodGet {
+			handleGetGuess(w, r, wordle.WordlePreferences)
+		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-
-		var guessReq GuessRequest
-		err := json.NewDecoder(r.Body).Decode(&guessReq)
-		if err != nil {
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
-			return
-		}
-
-		response, err := handleGuess(guessReq, wordle.word, wordle.WordlePreferences)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
 	})
 
 	// Create array to store word URLs
@@ -65,26 +40,26 @@ func SetupServer(server *http.Server, wordle *Wordle) {
 		wordEndpoint := fmt.Sprintf("/wordle/guess/word%d", i)
 		wordURLs[i] = "http://" + server.Addr + wordEndpoint
 
-		generatedEasyWord := wordle.Generate(EasyWordlePreferences)
+		prefs := WordlePreferences{
+			Length:                 0,
+			ContainsCapitalLetters: false,
+			ContainsSpecialChars:   false,
+			ContainsNumbers:        false,
+		}
+		generatedEasyWord := wordle.Generate(prefs)
+		prefs.Length = len(generatedEasyWord)
 		copyWord := generatedEasyWord
 
 		// Create handler for each word endpoint
 		http.HandleFunc(wordEndpoint, func(w http.ResponseWriter, r *http.Request) {
-			var guessReq GuessRequest
-			err := json.NewDecoder(r.Body).Decode(&guessReq)
-			if err != nil {
-				http.Error(w, "Invalid request body", http.StatusBadRequest)
+			if r.Method == http.MethodPost {
+				handlePostGuess(w, r, copyWord, prefs)
+			} else if r.Method == http.MethodGet {
+				handleGetGuess(w, r, prefs)
+			} else {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 				return
 			}
-
-			response, err := handleGuess(guessReq, copyWord, EasyWordlePreferences)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(response)
 		})
 	}
 
@@ -150,4 +125,27 @@ func validateGuess(secret, guess string, pref WordlePreferences) error {
 		}
 	}
 	return nil
+}
+
+func handlePostGuess(w http.ResponseWriter, r *http.Request, word string, prefs WordlePreferences) {
+	var guessReq GuessRequest
+	err := json.NewDecoder(r.Body).Decode(&guessReq)
+	if err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	response, err := handleGuess(guessReq, word, prefs)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func handleGetGuess(w http.ResponseWriter, r *http.Request, prefs WordlePreferences) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(prefs)
 }

@@ -67,7 +67,21 @@ func main() {
 }
 
 func easyWordRoutine(wordUrl string) {
-	easyWordLength := wordle.EasyWordlePreferences.Length
+	// do a get requeest at wordURL to get the word length from WordlePreferences
+	res, err := http.Get(wordUrl)
+	if err != nil {
+		log.Println("error getting word URL: ", err)
+		return
+	}
+
+	var wordlePreferences wordle.WordlePreferences
+	err = json.NewDecoder(res.Body).Decode(&wordlePreferences)
+	if err != nil {
+		log.Println("error decoding wordle preferences: ", err)
+		return
+	}
+
+	easyWordLength := wordlePreferences.Length
 	guessRequestBody := wordle.GuessRequest{
 		Guess: strings.Repeat("a", easyWordLength),
 	}

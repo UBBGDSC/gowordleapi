@@ -50,8 +50,17 @@ func NewWordle() *Wordle {
 	return worlde
 }
 
+// Generate generates a random word based on the given WordlePreferences.
+// If the length preference is 0, it returns a random word from the wordlist.
+// Otherwise, it generates a word with the specified length by adding random characters
+// with a 50% chance to be placed at the beginning or end.
+// The generated word is returned as a string.
 func (w *Wordle) Generate(pref WordlePreferences) string {
 	randomWord := w.wordlist[rand.Intn(len(w.wordlist))]
+
+	if pref.Length == 0 {
+		return randomWord
+	}
 
 	// Calculate the number of characters to add
 	numCharsToAdd := pref.Length - len(randomWord)
@@ -80,6 +89,9 @@ func (w *Wordle) Generate(pref WordlePreferences) string {
 	return string(word)
 }
 
+// SetPreferences sets the preferences for the Wordle game.
+// It takes a WordlePreferences struct as input and updates the Wordle's preferences accordingly.
+// It also generates a new word based on the updated preferences and assigns it to the Wordle's word field.
 func (w *Wordle) SetPreferences(pref WordlePreferences) {
 	w.WordlePreferences = pref
 	word := w.Generate(pref)
