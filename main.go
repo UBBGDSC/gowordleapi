@@ -11,6 +11,11 @@ import (
 	"github.com/UBBGDSC/gowordleapi/wordle"
 )
 
+const letters = "abcdefghijklmnopqrstuvwxyz"
+const numbers = "0123456789"
+const capitals = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const specials = "!@#$%^&*()-_=+[]{}|;:'\",.<>/?"
+
 func main() {
 	// Create a Wordle instance
 	wordleInstance := wordle.NewWordle()
@@ -35,11 +40,12 @@ func main() {
 		}
 		fmt.Println("Easy word channel closed")
 	}()
-	//go func() {
-	// 	for hardWordUrl := range wordleInstance.HardWordChannel {
-	// 		go hardWordRoutine(hardWordUrl)
-	// 	}
-	//}()
+	go func() {
+		for hardWordUrl := range wordleInstance.HardWordChannel {
+			go easyWordRoutine(hardWordUrl)
+		}
+		fmt.Println("Hard word channel closed")
+	}()
 
 	// Alternative with select and 2 channels:
 	// for {
@@ -112,17 +118,27 @@ func easyWordRoutine(wordUrl string) {
 			break // Exit the loop if successful
 		}
 
-		guessRequestBody.Guess = generateNextGuess(guessRequestBody.Guess, guessResponse.Feedback)
+		guessRequestBody.Guess = generateNextGuess(guessRequestBody.Guess, guessResponse.Feedback, wordlePreferences)
 	}
 }
 
-func generateNextGuess(guess string, feedback string) string {
+func generateNextGuess(guess string, feedback string, pref wordle.WordlePreferences) string {
 	nextGuess := make([]byte, len(guess))
+	charset := letters
 	for i := 0; i < len(guess); i++ {
 		if feedback[i] == '2' {
 			nextGuess[i] = guess[i]
 		} else {
-			nextGuess[i] = byte(rand.Intn(26) + 'a')
+			if pref.ContainsNumbers {
+				charset += numbers
+			}
+			if pref.ContainsCapitalLetters {
+				charset += capitals
+			}
+			if pref.ContainsSpecialChars {
+				charset += specials
+			}
+			nextGuess[i] = charset[rand.Intn(len(charset))]
 		}
 	}
 	return string(nextGuess)

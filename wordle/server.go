@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"strings"
 )
@@ -33,12 +34,13 @@ func SetupServer(server *http.Server, wordle *Wordle) {
 	})
 
 	// Create array to store word URLs
-	wordURLs := make([]string, numWords)
+	easyWordURLs := make([]string, numWords)
+	hardWordURLs := make([]string, numWords)
 
 	// Set up HTTP handlers synchronously
 	for i := 0; i < numWords; i++ {
 		wordEndpoint := fmt.Sprintf("/wordle/guess/word%d", i)
-		wordURLs[i] = "http://" + server.Addr + wordEndpoint
+		easyWordURLs[i] = "http://" + server.Addr + wordEndpoint
 
 		prefs := WordlePreferences{
 			Length:                 0,
@@ -63,12 +65,47 @@ func SetupServer(server *http.Server, wordle *Wordle) {
 		})
 	}
 
+	// Set up HTTP handlers synchronously for hard words
+	for i := 0; i < numWords; i++ {
+		hardWordEndpoint := fmt.Sprintf("/wordle/guess/hardWord%d", i)
+		hardWordURLs[i] = "http://" + server.Addr + hardWordEndpoint
+
+		// Generate hard word with a random length
+		prefs := WordlePreferences{
+			Length:                 rand.Intn(10) + 10, // Random length between 10 and 20
+			ContainsCapitalLetters: rand.Intn(2) == 0,
+			ContainsSpecialChars:   rand.Intn(2) == 0,
+			ContainsNumbers:        rand.Intn(2) == 0,
+		}
+		generatedHardWord := wordle.Generate(prefs)
+		prefs.Length = len(generatedHardWord)
+		copyWord := generatedHardWord
+
+		// Create handler for each hard word endpoint
+		http.HandleFunc(hardWordEndpoint, func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodPost {
+				handlePostGuess(w, r, copyWord, prefs)
+			} else if r.Method == http.MethodGet {
+				handleGetGuess(w, r, prefs)
+			} else {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+		})
+	}
+
 	// Create and send endpoints to the easy channel in a goroutine
 	go func() {
-		for _, wordURL := range wordURLs {
+		for _, wordURL := range easyWordURLs {
 			wordle.EasyWordChannel <- wordURL
 		}
 		close(wordle.EasyWordChannel)
+	}()
+	go func() {
+		for _, wordURL := range hardWordURLs {
+			wordle.HardWordChannel <- wordURL
+		}
+		close(wordle.HardWordChannel)
 	}()
 
 	server.Handler = http.DefaultServeMux
